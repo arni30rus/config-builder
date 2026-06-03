@@ -1,0 +1,41 @@
+Если на вашем сервере еще не установлен Docker, выполните следующие шаги от имени пользователя с правами sudo.
+Шаг 1: Обновление системы и установка зависимостей
+
+Сначала обновим список пакетов и установим необходимые утилиты для работы с репозиториями:
+
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+  
+Шаг 2: Добавление официального GPG-ключа Docker
+
+Система должна доверять пакетам Docker. Добавляем ключ:
+
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+ 
+ 
+Шаг 3: Добавление репозитория Docker
+
+Добавляем адрес, откуда система будет скачивать обновления Docker:
+
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  
+Шаг 4: Установка Docker Engine и Docker Compose
+
+Обновляем пакеты (уже с учетом нового репозитория) и устанавливаем сам Docker и плагин Compose:
+
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 
+ 
+Шаг 5: Запуск Docker без sudo
+
+По умолчанию команды Docker требуют прав суперпользователя. Чтобы вы могли запускать проект обычным пользователем, добавьте своего пользователя в группу docker:
+ 
+sudo groupadd docker 2>/dev/null || true
+sudo usermod -aG docker $USER
+
+⚠️ ВНИМАНИЕ: Чтобы изменения прав вступили в силу, вам нужно выйти из системы и зайти заново (или выполнить команду newgrp docker в текущем терминале). Если этого не сделать, команды Docker будут выдавать ошибку "permission denied".
