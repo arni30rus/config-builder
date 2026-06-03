@@ -25,10 +25,9 @@
       <div>
         <h3 class="text-xl font-semibold text-white mb-3 border-b border-slate-700 pb-2">1. Базовый конфиг</h3>
         
-        <!-- ТУЛБАР С КНОПКАМИ -->
+        <!-- ТУЛБАР (Убрали кнопку замены переменной) -->
         <div class="flex items-center gap-2 mb-2 bg-slate-800 p-2 rounded border border-slate-700">
           <button @mousedown.prevent="createBlock" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold transition shadow">📦 Выделить блок</button>
-          <button @mousedown.prevent="createVariable" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded text-xs font-bold transition shadow">✏️ Заменить на переменную</button>
         </div>
 
         <textarea ref="mainTextArea" v-model="mainText" class="w-full h-96 bg-slate-900 p-4 font-mono text-sm focus:outline-none resize-y text-green-300 border border-slate-700 rounded-lg"></textarea>
@@ -50,7 +49,7 @@
           </div>
         </div>
         
-        <div v-if="variables.length === 0" class="text-sm text-slate-500 italic text-center py-4 bg-slate-800 rounded-lg">Нет переменных.</div>
+        <div v-if="variables.length === 0" class="text-sm text-slate-500 italic text-center py-4 bg-slate-800 rounded-lg">Нет переменных. Нажмите "+ Локальная", чтобы создать.</div>
         
         <div class="space-y-3">
           <div 
@@ -62,7 +61,7 @@
               <label class="block text-xs mb-1" :class="v.isGlobal ? 'text-green-400' : 'text-slate-400'">Описание</label>
               <input v-model="v.label" type="text" :readonly="v.isGlobal" class="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm focus:outline-none" :class="v.isGlobal ? 'cursor-not-allowed opacity-80' : ''">
             </div>
-            <div class="col-span-6 flex gap-2 items-center">
+            <div class="col-span-5 flex gap-2 items-center">
               <span class="text-slate-500 font-mono pt-5">{{ openBrace }}</span>
               <div class="flex-1">
                 <label class="block text-xs mb-1" :class="v.isGlobal ? 'text-green-400' : 'text-slate-400'">Имя</label>
@@ -70,8 +69,25 @@
               </div>
               <span class="text-slate-500 font-mono pt-5">{{ closeBrace }}</span>
             </div>
-            <div class="col-span-1 flex justify-center pt-4">
-              <button @click="variables.splice(index, 1)" class="text-red-400 hover:text-red-300 font-bold text-xl">&times;</button>
+            
+            <!-- КНОПКИ ДЕЙСТВИЙ С ПЕРЕМЕННОЙ -->
+            <div class="col-span-2 flex justify-center items-end gap-2 pb-1">
+               <!-- НОВАЯ КНОПКА: Вставить в выделение -->
+               <button 
+                 @mousedown.prevent="applyVariableToSelection(v.name)" 
+                 class="w-10 h-10 flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 rounded text-xl font-bold transition shadow"
+                 title="Заменить выделенный текст в конфиге на эту переменную"
+               >
+                 +
+               </button>
+               <!-- Кнопка удаления -->
+               <button 
+                 @click="variables.splice(index, 1)" 
+                 class="w-10 h-10 flex items-center justify-center bg-slate-700 hover:bg-red-600 rounded text-xl font-bold transition text-red-400 hover:text-white"
+                 title="Удалить переменную"
+               >
+                 &times;
+               </button>
             </div>
           </div>
         </div>
@@ -175,42 +191,42 @@ const createBlock = () => {
     return;
   }
 
-  // Считаем, сколько блоков уже есть в тексте, чтобы назвать следующий по порядку
+  // Считаем, сколько блоков уже есть
   const matches = mainText.value.match(/\[BLOCK: /g);
   const blockNumber = matches ? matches.length + 1 : 1;
 
   const text = mainText.value;
   const selectedText = text.substring(start, end);
   
-  // Автоматически вставляем номер блока
-  mainText.value = text.substring(0, start) + `[BLOCK: ${blockNumber}]\n` + selectedText + text.substring(end);
+  // Оборачиваем выделенный текст: начало блока + текст + конец блока
+  mainText.value = text.substring(0, start) + 
+                   `[BLOCK: ${blockNumber}]\n` + 
+                   selectedText + 
+                   `\n[END_BLOCK: ${blockNumber}]` + 
+                   text.substring(end);
 }
 
-const createVariable = () => {
+// НОВАЯ ФУНКЦИЯ: Вставка существующей переменной в выделение
+const applyVariableToSelection = (varName) => {
+  if (!varName) {
+    alert('Сначала введите имя переменной!');
+    return;
+  }
+
   const textarea = mainTextArea.value;
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
 
+  // Если текст не выделен, просто вставляем переменную в позицию курсора
   if (start === end) {
-    alert('Сначала выделите значение в поле базового конфига, которое нужно заменить на переменную!');
+    const text = mainText.value;
+    mainText.value = text.substring(0, start) + `{{ ${varName} }}` + text.substring(end);
     return;
   }
 
-  let varName = prompt('Введите имя переменной (например: ip_address):');
-  if (!varName) return;
-
-  // ЗАЩИТА ОТ ПРОБЕЛОВ: Заменяем пробелы на подчеркивания для Jinja2
-  const safeVarName = varName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-  if (!safeVarName) return;
-
+  // Если текст выделен, заменяем его на переменную
   const text = mainText.value;
-  // Заменяем выделенный текст на безопасную переменную
-  mainText.value = text.substring(0, start) + `{{ ${safeVarName} }}` + text.substring(end);
-
-  // Автоматически добавляем эту переменную в список локальных переменных
-  if (!variables.value.some(v => v.name === safeVarName)) {
-    variables.value.push({ name: safeVarName, label: varName, isGlobal: false });
-  }
+  mainText.value = text.substring(0, start) + `{{ ${varName} }}` + text.substring(end);
 }
 
 const save = () => {

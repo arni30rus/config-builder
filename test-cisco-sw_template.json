@@ -1,0 +1,35 @@
+{
+  "name": "test-cisco-sw",
+  "main_text": "[BLOCK: 1]\nhostname {{ hostname }}\n!\nboot-start-marker\nboot-end-marker\n!\nlogging buffered 128000\nlogging console critical\n!\n!\n!\naaa new-model\n!\n!\naaa authentication login default local\naaa authorization console\naaa authorization exec default local \n[END_BLOCK: 1]\n!\n!\n!\n[BLOCK: 2]\naaa session-id common\nclock timezone TMN 5\nsystem mtu routing 1500\nno ip source-route\nno ip gratuitous-arps\nip icmp rate-limit unreachable 10\n!\n!\nno ip domain-lookup\nip domain-name local\n!\n!\n!\nerrdisable recovery cause udld\nerrdisable recovery cause bpduguard\nerrdisable recovery cause security-violation\nerrdisable recovery cause channel-misconfig (STP)\nerrdisable recovery cause pagp-flap\nerrdisable recovery cause dtp-flap\nerrdisable recovery cause link-flap\nerrdisable recovery cause gbic-invalid\nerrdisable recovery cause psecure-violation\nerrdisable recovery cause dhcp-rate-limit\nerrdisable recovery cause vmps\nerrdisable recovery cause loopback\n!\n[END_BLOCK: 2]\n!\n[BLOCK: 3]\n!\nspanning-tree mode rapid-pvst\nspanning-tree logging\nspanning-tree portfast bpduguard default\nspanning-tree extend system-id\n!\nvlan internal allocation policy ascending\nno lldp tlv-select port-vlan\nno lldp tlv-select mac-phy-cfg\nlldp run\n!\nip ssh version 2\n!\n!\n[END_BLOCK: 3]\n[BLOCK: 4]\n!\ninterface FastEthernet0/1\n switchport access vlan {{ access_vlan_number }}\n switchport mode access\n switchport nonegotiate\n switchport voice vlan {{ voice_vlan_number }}\n load-interval 30\n spanning-tree portfast\n!\ninterface FastEthernet0/2\nswitchport access vlan {{ access_vlan_number }}\n switchport mode access\n switchport nonegotiate\n switchport voice vlan {{ voice_vlan_number }}\n load-interval 30\n spanning-tree portfast\n!\ninterface FastEthernet0/3\nswitchport access vlan {{ access_vlan_number }}\n switchport mode access\n switchport nonegotiate\n switchport voice vlan {{ voice_vlan_number }}\n load-interval 30\n spanning-tree portfast\n!\n\ninterface GigabitEthernet0/1\n switchport mode trunk\n switchport nonegotiate\n load-interval 30\n!\n!\n[END_BLOCK: 4]\n[BLOCK: 5]\ninterface Vlan1\n ip address {{ mgmt_ip }} {{ mgmt_mask }}\n no ip route-cache\n!\nip default-gateway {{ default_gw_ip }}\nno ip http server\nno ip http secure-server\n!\n!\n[END_BLOCK: 5]\n[BLOCK: 6]\nline con 0\nline vty 0 4\n exec-timeout 6000 0\n transport input ssh\nline vty 5 15\n exec-timeout 6000 0\n transport input ssh\n!\nntp clock-period 36029429\nntp server {{ ntp_server }}\n\n[END_BLOCK: 6]\nend",
+  "variables": [
+    {
+      "name": "hostname",
+      "label": "hostname"
+    },
+    {
+      "name": "access_vlan_number",
+      "label": "access_vlan_number"
+    },
+    {
+      "name": "voice_vlan_number",
+      "label": "voice_vlan_number"
+    },
+    {
+      "name": "mgmt_ip",
+      "label": "mgmt_ip"
+    },
+    {
+      "name": "mgmt_mask",
+      "label": "mgmt_mask"
+    },
+    {
+      "name": "default_gw_ip",
+      "label": "default_gw_ip"
+    },
+    {
+      "name": "ntp_server",
+      "label": "ntp_server"
+    }
+  ],
+  "options": []
+}

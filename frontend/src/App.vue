@@ -368,15 +368,25 @@ const generateConfig = async () => {
     isLoading.value = false
   }
 }
-
 const parseBlocks = (text) => {
+  // 1. Сначала удаляем ВСЕ маркеры конца блока из всего текста, 
+  // чтобы они никогда не попали в консоль сетевого оборудования при копировании
+  const cleanText = text.replace(/\[END_BLOCK:.*?\]\n?/g, '')
+
   const result = []
   const regex = /\[BLOCK: (.*?)\]\n/g
   let match;
-  while ((match = regex.exec(text)) !== null) result.push({ title: match[1].trim(), content: '' });
-  const sections = text.split(/\[BLOCK: .*?\]\n/)
+  
+  // 2. Ищем начала блоков в очищенном тексте
+  while ((match = regex.exec(cleanText)) !== null) result.push({ title: match[1].trim(), content: '' });
+  
+  const sections = cleanText.split(/\[BLOCK: .*?\]\n/)
   for (let i = 0; i < result.length; i++) result[i].content = sections[i + 1] ? sections[i + 1].trim() : ''
-  if (result.length === 0 && text.trim().length > 0) result.push({ title: 'Полный конфиг', content: text.trim() })
+  
+  // Если блоков нет, отдаем весь очищенный текст
+  if (result.length === 0 && cleanText.trim().length > 0) result.push({ title: 'Полный конфиг', content: cleanText.trim() })
+  
   return result
 }
+
 </script>
