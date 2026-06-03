@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # База данных
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: configdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d configdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Бэкенд
+  backend:
+    build: ./backend
+    environment:
+      # Подключаемся к контейнеру db по внутреннему имени сети
+      DATABASE_URL: "postgresql://admin:password@db:5432/configdb"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  # Фронтенд (Nginx + Сборка Vue)
+  frontend:
+    build: ./frontend
+    ports:
+      - "8800:80"
+    depends_on:
+      - backend
+
+# Том для сохранения данных БД (чтобы не потерять шаблоны при перезапуске)
+volumes:
+  postgres_data:
